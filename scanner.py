@@ -1,6 +1,7 @@
 import argparse
 import socket
 import time
+import json #extension for the output file
 from concurrent.futures import ThreadPoolExecutor  # manages the threads
 
 SERVICES = {
@@ -45,12 +46,23 @@ def main():
     parser.add_argument("-e", "--end", type=int, default=1024, help="Last port")
     parser.add_argument("-w", "--workers", type=int, default=100, help="Number of threads")
     parser.add_argument("-t", "--timeout", type=float, default=0.5, help="Timeout in seconds")
+    parser.add_argument("-o", "--output", help="Save results to a JSON file")
     args = parser.parse_args()
 
     t0 = time.time()
     found = scan_range(args.host, args.start, args.end, args.workers, args.timeout)
     print(f"Scan finished in {time.time() - t0:.2f}s. Open ports: {found}")
-
+    if args.output:
+        report = { #new dictionary 
+            "host": args.host,
+            "range": [args.start, args.end],
+            "open_ports": [
+                {"port": p, "service": SERVICES.get(p, "unknown")} for p in found
+            ],
+        }
+    with open(args.output, "w") as f:
+        json.dump(report, f, indent=2)
+    print(f"Report saved to {args.output}")
 
 if __name__ == "__main__":
     main()
